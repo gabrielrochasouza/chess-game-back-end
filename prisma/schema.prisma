@@ -34,6 +34,7 @@ model ChessGames {
   userId2            String
   blackPieceUser     String?
   whitePieceUser     String?
+  matchRequestMade   Boolean? @default(false)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }

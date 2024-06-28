@@ -11,7 +11,7 @@ import { ApiTags } from '@nestjs/swagger';
 export class UsersController {
     constructor(private readonly usersService: UsersService) {}
 
-    @Post()
+    @Post('register')
     create(@Body() createUserDto: CreateUserDto) {
         return this.usersService.create(createUserDto);
     }
@@ -45,19 +45,19 @@ export class UsersController {
     @UseGuards(UsersAuthGuard)
     @Patch(':id/win')
     addWinToPlayerRecord(@Param('id') id: string) {
-        return this.usersService.addWinToPlayerRecord(id);
+        return this.usersService.updateRecord(id, 'wins');
     }
 
     @UseGuards(UsersAuthGuard)
     @Patch(':id/lose')
     addLoseToPlayerRecord(@Param('id') id: string) {
-        return this.usersService.addLoseToPlayerRecord(id);
+        return this.usersService.updateRecord(id, 'loses');
     }
 
     @UseGuards(UsersAuthGuard)
     @Patch(':id/draw')
     addDrawToPlayerRecord(@Param('id') id: string) {
-        return this.usersService.addDrawToPlayerRecord(id);
+        return this.usersService.updateRecord(id, 'draws');
     }
 
     @UseGuards(UsersAuthGuard)

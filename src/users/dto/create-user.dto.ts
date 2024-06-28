@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, MinLength, IsOptional, IsUrl } from 'class-validator';
+import { IsNotEmpty, IsString, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateUserDto {
@@ -16,12 +16,4 @@ export class CreateUserDto {
     @MinLength(8)
     @IsNotEmpty()
         password: string;
-
-    @ApiProperty({
-        description: 'It is a url for a profile picture.'
-    })
-    @IsString()
-    @IsOptional()
-    @IsUrl()
-        profilePic?: string;
 }

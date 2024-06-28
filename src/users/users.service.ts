@@ -57,7 +57,6 @@ export class UsersService {
 
     async remove(id: string) {
         await this.verifyUserExistence(id);
-
         return this.prisma.users.delete({ where: { id } });
     }
 
@@ -93,23 +92,25 @@ export class UsersService {
             const token = authorization.split(' ')[1];
             if(jwt.verify(token, env['SECRET_KEY'])) {
                 const data = jwt.decode(token);
-                return this.findOne(data['id']);
+                return {
+                    user: await this.findOne(data['id']),
+                    chessGames: [
+                        ...await this.prisma.chessGames.findMany({
+                            where: {
+                                userId1: data['id'],
+                            }
+                        }),
+                        ...await this.prisma.chessGames.findMany({
+                            where: {
+                                userId2: data['id'],
+                            }
+                        })
+                    ]
+                };
             }
         } catch (e) {
             throw new UnauthorizedException('Invalid Token');
         }
-    }
-
-    async addWinToPlayerRecord (id: string) {
-        return this.updateRecord(id, 'wins');
-    }
-
-    async addLoseToPlayerRecord (id: string) {
-        return this.updateRecord(id, 'loses');
-    }
-
-    async addDrawToPlayerRecord (id: string) {
-        return this.updateRecord(id, 'draws');
     }
 
     async updateRecord (id: string, entity: 'wins' | 'loses' | 'draws') {
