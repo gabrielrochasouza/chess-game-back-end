@@ -1,19 +1,35 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateUserDto } from './create-user.dto';
-import { IsBoolean, IsNumber, IsString, MinLength } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, IsUrl, MinLength } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateUserDto extends PartialType(CreateUserDto) {
+    @ApiProperty({
+        description: 'The username field, it has a unique constraint.'
+    })
+    @IsOptional()
     @IsString()
-        username: string;
+        username?: string;
+
+    @ApiProperty({
+        description: 'The password field, has a minimum of 8 characters.'
+    })
     @IsString()
     @MinLength(8)
-        password: string;
+    @IsOptional()
+        password?: string;
+
+    @ApiProperty()
     @IsBoolean()
+    @IsOptional()
         active?: boolean;
-    @IsNumber()
-        wins: number;
-    @IsNumber()
-        loses: number;
-    @IsNumber()
-        draws: number;
+
+    @ApiProperty({
+        description: 'It is a url for a profile picture.'
+    })
+    @IsString()
+    @IsOptional()
+    @IsUrl()
+        profilePic?: string;
+
 }

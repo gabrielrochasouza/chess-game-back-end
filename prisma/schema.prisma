@@ -16,24 +16,24 @@ datasource db {
 
 
 model Users {
-  id        String   @id @map("_id") @default(auto()) @db.ObjectId()
-  username  String   @unique
-  password  String
-  active    Boolean  @default(true)
-  wins      Int      @default(0)
-  loses     Int      @default(0)
-  draws     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @map("_id") @default(auto()) @db.ObjectId()
+  username   String   @unique
+  password   String
+  active     Boolean  @default(true)
+  wins       Int      @default(0)
+  loses      Int      @default(0)
+  draws      Int      @default(0)
+  profilePic String   @default("https://i.imgur.com/AEf6xMQ.jpeg")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model ChessGames {
   id                 String   @id @map("_id")  @default(auto()) @db.ObjectId()
-  blackPieceUsername String
-  whitePieceUsername String
-  winner             String
-  loser              String
-  draw               Boolean  @default(false)
+  userId1            String
+  userId2            String
+  blackPieceUser     String?
+  whitePieceUser     String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }

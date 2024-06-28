@@ -3,8 +3,10 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import UserLoginDto from './dto/user-login-dto';
-import { AuthGuard } from 'src/auth_guard/auth.guard';
+import { UsersAuthGuard } from 'src/auth_guard/users-auth.guard';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Users')
 @Controller('users')
 export class UsersController {
     constructor(private readonly usersService: UsersService) {}
@@ -34,13 +36,31 @@ export class UsersController {
         return this.usersService.findOne(id);
     }
 
-    @UseGuards(AuthGuard)
+    @UseGuards(UsersAuthGuard)
     @Patch(':id')
     update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
         return this.usersService.update(id, updateUserDto);
     }
 
-    @UseGuards(AuthGuard)
+    @UseGuards(UsersAuthGuard)
+    @Patch(':id/win')
+    addWinToPlayerRecord(@Param('id') id: string) {
+        return this.usersService.addWinToPlayerRecord(id);
+    }
+
+    @UseGuards(UsersAuthGuard)
+    @Patch(':id/lose')
+    addLoseToPlayerRecord(@Param('id') id: string) {
+        return this.usersService.addLoseToPlayerRecord(id);
+    }
+
+    @UseGuards(UsersAuthGuard)
+    @Patch(':id/draw')
+    addDrawToPlayerRecord(@Param('id') id: string) {
+        return this.usersService.addDrawToPlayerRecord(id);
+    }
+
+    @UseGuards(UsersAuthGuard)
     @Delete(':id')
     remove(@Param('id') id: string) {
         return this.usersService.remove(id);

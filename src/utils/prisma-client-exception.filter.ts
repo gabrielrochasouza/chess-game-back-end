@@ -8,14 +8,14 @@ export class PrismaClientExceptionFilter extends BaseExceptionFilter {
     catch(exception: Prisma.PrismaClientKnownRequestError, host: ArgumentsHost) {
         const ctx = host.switchToHttp();
         const response = ctx.getResponse<Response>();
-        const message = exception.message.replace(/\n/g, '');
+        // const message = exception.message.replace(/\n/g, '');
 
         switch (exception.code) {
         case 'P2002': {
             const status = HttpStatus.CONFLICT;
             response.status(status).json({
                 statusCode: status,
-                message: message,
+                message: `Username '${response.req.body.username}' already exists!`,
             });
             break;
         }

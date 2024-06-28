@@ -42,6 +42,10 @@ export class UsersService {
     async update(id: string, updateUserDto: UpdateUserDto) {
         await this.verifyUserExistence(id);
 
+        if (updateUserDto.password) {
+            updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+        }
+
         return this.prisma.users.update({
             data: updateUserDto,
             omit: { password: true },
@@ -81,19 +85,41 @@ export class UsersService {
         
         const token = jwt.sign({ username: user.username, id: user.id }, env['SECRET_KEY'], { expiresIn: '1h' });
         
-        return { token };
+        return { token, id: user.id };
     }
 
     async getPersonalInfo (authorization: string) {
         try {
-            if (!authorization) {
-                throw new UnauthorizedException('Invalid Token');
-            }
             const token = authorization.split(' ')[1];
             if(jwt.verify(token, env['SECRET_KEY'])) {
                 const data = jwt.decode(token);
                 return this.findOne(data['id']);
             }
+        } catch (e) {
+            throw new UnauthorizedException('Invalid Token');
+        }
+    }
+
+    async addWinToPlayerRecord (id: string) {
+        return this.updateRecord(id, 'wins');
+    }
+
+    async addLoseToPlayerRecord (id: string) {
+        return this.updateRecord(id, 'loses');
+    }
+
+    async addDrawToPlayerRecord (id: string) {
+        return this.updateRecord(id, 'draws');
+    }
+
+    async updateRecord (id: string, entity: 'wins' | 'loses' | 'draws') {
+        try {
+            const user = await this.findOne(id);
+
+            return this.prisma.users.update({
+                where: { id },
+                data: { [entity]: user[entity] + 1 },
+            });
         } catch (e) {
             throw new UnauthorizedException('Invalid Token');
         }

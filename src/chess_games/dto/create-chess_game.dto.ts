@@ -1,15 +1,13 @@
-import { IsString, IsBoolean } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsNotEmpty } from 'class-validator';
 
 export class CreateChessGameDto {
+    @ApiProperty({
+        description: 'The User Identification to create a new chess game'
+    })
     @IsString()
-        blackPieceUsername: string;
-    @IsString()
-        whitePieceUsername: string;
-    @IsString()
-        winner: string;
-    @IsString()
-        loser: string;
-    @IsBoolean()
-        draw: boolean;
+    @IsNotEmpty()
+        userId: string;
+
 }
 

@@ -5,7 +5,7 @@ import * as jwt from 'jsonwebtoken';
 import { Request } from 'express';
 
 @Injectable()
-export class AuthGuard implements CanActivate {
+export class UsersAuthGuard implements CanActivate {
     canActivate(
         context: ExecutionContext,
     ): boolean | Promise<boolean> | Observable<boolean> {
@@ -15,20 +15,17 @@ export class AuthGuard implements CanActivate {
 
     validateRequest (request: Request): boolean {
         try {
-            if (!request.headers['authorization']) {
+            if (!request.headers['authorization'] || !request.headers['authorization'].split(' ')[1]) {
                 return false;
             }
             const token = request.headers['authorization'].split(' ')[1];
 
             if(jwt.verify(token, env['SECRET_KEY'])) {
                 const data = jwt.decode(token);
-                if (data['id'] === request.params.id) {
-                    return true
-                }
-                return false;
+                return data['id'] === request.params.id;
             }
         } catch (e) {
-            throw new UnauthorizedException();
+            throw new UnauthorizedException('Invalid Token');
         }
         
         return false;
