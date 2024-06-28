@@ -1,28 +1,102 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { PrismaService } from 'src/prisma/prisma.service';
+import UserLoginDto from './dto/user-login-dto';
+import * as bcrypt from 'bcryptjs';
+import * as jwt from 'jsonwebtoken';
+import { env } from 'process';
 
 @Injectable()
 export class UsersService {
-    create(createUserDto: CreateUserDto) {
-        console.log(createUserDto);
-        return 'This action adds a new user';
+    constructor(private prisma: PrismaService) {}
+
+    async create(createUserDto: CreateUserDto) {
+        try {
+            createUserDto.password = await bcrypt.hash(createUserDto.password, 10);
+
+            return await this.prisma.users.create({
+                data: createUserDto,
+                omit: { password: true }
+            });
+        } catch (error) {
+            throw error;
+        }
     }
 
     findAll() {
-        return `This action returns all users`;
+        return this.prisma.users.findMany({ omit: { password: true } });
     }
 
-    findOne(id: number) {
-        return `This action returns a #${id} user`;
+    async findOne(id: string) {
+        const user = await this.prisma.users.findUniqueOrThrow({ 
+            where: { id },
+            omit: { password: true }
+        }).catch(() => {
+            throw new NotFoundException();
+        });
+
+        return user;
     }
 
-    update(id: number, updateUserDto: UpdateUserDto) {
-        console.log(updateUserDto);
-        return `This action updates a #${id} user`;
+    async update(id: string, updateUserDto: UpdateUserDto) {
+        await this.verifyUserExistence(id);
+
+        return this.prisma.users.update({
+            data: updateUserDto,
+            omit: { password: true },
+            where: {
+                id,
+            }
+        });
     }
 
-    remove(id: number) {
-        return `This action removes a #${id} user`;
+    async remove(id: string) {
+        await this.verifyUserExistence(id);
+
+        return this.prisma.users.delete({ where: { id } });
     }
+
+    async verifyUserExistence(id: string) {
+        await this.prisma.users.findUniqueOrThrow({ where: { id } })
+            .catch(() => {
+                throw new NotFoundException();
+            });
+    }
+
+    async login (userLoginDto: UserLoginDto) {
+        const user = await this.prisma.users.findUniqueOrThrow({
+            where: {
+                username: userLoginDto.username,
+            }
+        }).catch(() => {
+            throw new UnauthorizedException('Invalid credentials');
+        });
+
+        const isPasswordValid = await bcrypt.compare(userLoginDto.password, user.password);
+
+        if (!isPasswordValid) {
+            throw new UnauthorizedException('Invalid credentials');
+        }
+        
+        const token = jwt.sign({ username: user.username, id: user.id }, env['SECRET_KEY'], { expiresIn: '1h' });
+        
+        return { token };
+    }
+
+    async getPersonalInfo (authorization: string) {
+        try {
+            if (!authorization) {
+                throw new UnauthorizedException('Invalid Token');
+            }
+            const token = authorization.split(' ')[1];
+            if(jwt.verify(token, env['SECRET_KEY'])) {
+                const data = jwt.decode(token);
+                return this.findOne(data['id']);
+            }
+        } catch (e) {
+            throw new UnauthorizedException('Invalid Token');
+        }
+    }
+
 }
