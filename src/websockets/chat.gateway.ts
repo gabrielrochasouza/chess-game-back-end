@@ -1,5 +1,7 @@
 import { Logger } from "@nestjs/common";
 import {
+    ConnectedSocket,
+    MessageBody,
     OnGatewayConnection,
     OnGatewayDisconnect,
     OnGatewayInit,
@@ -9,6 +11,7 @@ import {
 } from "@nestjs/websockets";
 import { Server, Socket } from "socket.io";
 import { ChatService } from "./chat.service";
+import { PrismaService } from 'src/prisma/prisma.service';
 
 interface IPayload {
   selectedLine: number;
@@ -21,76 +24,73 @@ interface IPayload {
 @WebSocketGateway({ cors: true })
 export class ChatGateway
 implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
-    constructor(private readonly chatService: ChatService) {}
+    constructor(private readonly chatService: ChatService, private prisma: PrismaService) {}
 
-    private connectedUsers = new Map<string, Socket>();
-    private rooms = new Map<string, string>();
-    private chessRooms = {};
-    private onlineUsers = {};
+    private connectedUsers = {};
+    private chatMessages = {};
 
     @WebSocketServer() server: Server;
     private logger: Logger = new Logger("AppGateway");
 
-    afterInit(server: any) {
-        this.logger.log("init");
-        this.logger.log(server);
+    afterInit() {
+        console.log('afterInit');
     }
 
-    handleConnection(socket: Socket): void {
-        console.log(`Client connected: ${socket.id}`);
-        this.connectedUsers.set(socket.id, socket);
+    handleConnection(): void {
+        console.log('handleConnection');
+    }
 
-        this.server.emit('handleConnection', { 
-            sender: socket.id,
-            numberOfUsers: this.connectedUsers.size,
-            users: this.connectedUsers.keys()
+    handleDisconnect(client: Socket) {
+        Object.entries(this.connectedUsers).forEach(([userId, socketIds]) => {
+            if (Array.isArray(socketIds) && socketIds.some(s => s === client.id)) {
+                this.connectedUsers[userId] = socketIds.filter(s => s !== client.id);
+                if (this.connectedUsers[userId].length === 0) {
+                    delete this.connectedUsers[userId]
+                }
+            }
+        });
+        this.server.emit('handleConnect', { 
+            numberOfUsers: Object.keys(this.connectedUsers).length,
+            users: Object.keys(this.connectedUsers)
         });
     }
 
-    handleDisconnect(client: any) {
-        this.logger.log("client disconnected: " + client.id);
-        this.connectedUsers.delete(client.id);
-        // Remove user from room when disconnected
-        const room = this.rooms.get(client.id);
-        if (room) {
-            client.leave(room);
-            this.rooms.delete(client.id);
-        }
-        this.server.emit('handleDisconnect', { 
-            sender: client.id, 
-            numberOfUsers: this.connectedUsers.size, 
-            users: JSON.stringify(this.connectedUsers) 
+    @SubscribeMessage("UserConnected")
+    handleUserConnected(client: Socket, user) {
+        this.connectedUsers[user.id] = this.connectedUsers[user.id] ? [ ...this.connectedUsers[user.id], client.id ] : [client.id];
+        this.server.emit('handleConnect', { 
+            sender: user.id,
+            numberOfUsers: Object.keys(this.connectedUsers).length,
+            users: Object.keys(this.connectedUsers)
         });
-    }
-
-    @SubscribeMessage("joinRoom")
-    handleJoinRoom(client: Socket, room: string) {
-        const usersInRoom = Array.from(this.rooms.values()).filter(
-            (r) => r === room,
-        );
-
-        if (usersInRoom.length > 2) {
-            // Room already has a user, handle as needed (reject or disconnect)
-            return;
-        }
-        client.join(room);
-        
-        this.rooms.set(client.id, room);
-
-        if (!this.chessRooms[room]?.length) {
-            this.chessRooms[room] = [client.id];
-            console.log(this.chessRooms);
-        } else if (!this.chessRooms[room].includes(client.id)) {
-            this.chessRooms[room] = [...this.chessRooms[room], client.id];
-            console.log(this.chessRooms);
-        }
-        
-        this.server.to(room).emit('joinRoom', { sender: client.id, room: this.chessRooms });
     }
 
     @SubscribeMessage("message")
     handleMessage(client: Socket, payload: IPayload): void {
-        // const { room } = payload;
         this.server.emit('message', { sender: client.id, payload });
     }
+
+    @SubscribeMessage("sendChatMessage")
+    handleSendChatMessage(client: Socket, payload: { roomId: string, message: string, username: string, allMessages: string }): void {
+        const message = {
+            message: payload.message,
+            createdAt: new Date(),
+            username: payload.username
+        };
+
+        this.chatMessages[payload.roomId] = this.chatMessages[payload.roomId] ? [...this.chatMessages[payload.roomId], message] : [message];
+
+        this.server.to(payload.roomId).emit('chatMessage', { 
+            roomId: payload.roomId,
+            chatMessages: this.chatMessages,
+            username: payload.username,
+        });
+    }
+
+    @SubscribeMessage('joinRoom')
+    handleJoinRoom(@MessageBody() room: string, @ConnectedSocket() client: Socket): void {
+        client.join(room);
+        client.emit('joinedRoom', room);
+    }
+
 }

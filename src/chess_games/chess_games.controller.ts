@@ -3,6 +3,7 @@ import { ChessGamesService } from './chess_games.service';
 import { CreateChessGameDto } from './dto/create-chess_game.dto';
 import { ChessGamesAuthGuard } from 'src/auth_guard/chess-games-auth.guard';
 import { ApiTags } from '@nestjs/swagger';
+import { ChatChessGameDto } from './dto/chat-chess-game.dto';
 
 @ApiTags('Chess Game')
 @Controller('chess-games')
@@ -31,6 +32,12 @@ export class ChessGamesController {
     @Patch('make-match-request/:id')
     makeMatchRequest(@Param('id') chessGameId: string, @Headers() headers: Record<string, string>) {
         return this.chessGamesService.makeMatchRequest(chessGameId, headers['authorization']);
+    }
+
+    @Patch('save-chat/:id')
+    @UseGuards(ChessGamesAuthGuard)
+    saveChat(@Param('id') chessGameId: string, @Body() chatChessGameDto: ChatChessGameDto, @Headers() headers: Record<string, string>) {
+        return this.chessGamesService.saveChat(chessGameId, chatChessGameDto, headers['authorization']);
     }
 
 }

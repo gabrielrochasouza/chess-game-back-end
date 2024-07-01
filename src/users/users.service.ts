@@ -25,7 +25,7 @@ export class UsersService {
     }
 
     findAll() {
-        return this.prisma.users.findMany({ omit: { password: true } });
+        return this.prisma.users.findMany({ omit: { password: true }, orderBy: { wins: 'desc' } });
     }
 
     async findOne(id: string) {
@@ -39,20 +39,35 @@ export class UsersService {
         return user;
     }
 
-    async update(id: string, updateUserDto: UpdateUserDto) {
-        await this.verifyUserExistence(id);
-
-        if (updateUserDto.password) {
-            updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
-        }
-
-        return this.prisma.users.update({
-            data: updateUserDto,
-            omit: { password: true },
-            where: {
-                id,
-            }
+    async findOneByUsername(username: string) {
+        const user = await this.prisma.users.findUniqueOrThrow({ 
+            where: { username },
+            omit: { password: true }
+        }).catch(() => {
+            throw new NotFoundException();
         });
+
+        return user;
+    }
+
+    async update(id: string, updateUserDto: UpdateUserDto) {
+        try {
+            await this.verifyUserExistence(id);
+    
+            if (updateUserDto.password) {
+                updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+            }
+    
+            return this.prisma.users.update({
+                data: updateUserDto,
+                omit: { password: true },
+                where: {
+                    id,
+                }
+            });
+        } catch (error) {
+            throw error;
+        }
     }
 
     async remove(id: string) {
@@ -81,10 +96,12 @@ export class UsersService {
         if (!isPasswordValid) {
             throw new UnauthorizedException('Invalid credentials');
         }
+
+        const expireTimeHours = 3;
         
-        const token = jwt.sign({ username: user.username, id: user.id }, env['SECRET_KEY'], { expiresIn: '1h' });
+        const token = jwt.sign({ username: user.username, id: user.id }, env['SECRET_KEY'], { expiresIn: `${expireTimeHours}h` });
         
-        return { token, id: user.id };
+        return { token, expiresIn: new Date(Date.now() + expireTimeHours * 60 * 60 * 1000) , ...user };
     }
 
     async getPersonalInfo (authorization: string) {
@@ -109,7 +126,7 @@ export class UsersService {
                 };
             }
         } catch (e) {
-            throw new UnauthorizedException('Invalid Token');
+            throw e;
         }
     }
 

@@ -1,12 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNotEmpty } from 'class-validator';
 
-export class CreateChessGameDto {
+export class ChatChessGameDto {
     @ApiProperty({
-        description: 'The User Identification to create a new chess game'
+        description: 'The Chat data of the room'
     })
     @IsString()
     @IsNotEmpty()
-        userId: string;
+        chat: string;
 }
-

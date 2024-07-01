@@ -32,8 +32,11 @@ model ChessGames {
   id                 String   @id @map("_id")  @default(auto()) @db.ObjectId()
   userId1            String
   userId2            String
+  username1          String?
+  username2          String?
   blackPieceUser     String?
   whitePieceUser     String?
+  chatMessages       String?  @default("[]")
   matchRequestMade   Boolean? @default(false)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt

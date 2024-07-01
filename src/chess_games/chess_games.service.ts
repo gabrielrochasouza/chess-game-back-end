@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/co
 import { CreateChessGameDto } from './dto/create-chess_game.dto';
 import * as jwt from 'jsonwebtoken';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { ChatChessGameDto } from './dto/chat-chess-game.dto';
 
 @Injectable()
 export class ChessGamesService {
@@ -12,8 +13,11 @@ export class ChessGamesService {
             const userId1 = this.getUserDataFromToken(authorization).id;
             const userId2 = userId;
 
-            await this.getPlayer(userId1);
-            await this.getPlayer(userId2);
+            const user1 = await this.getPlayer(userId1);
+            const user2 = await this.getPlayer(userId2);
+            
+            const username1 = user1.username;
+            const username2 = user2.username;
 
             const search1 = await this.searchForGame(userId1, userId2);
             if (search1) {
@@ -24,7 +28,7 @@ export class ChessGamesService {
                 return search2;
             }
 
-            return this.prisma.chessGames.create({ data: { userId1, userId2 } });
+            return this.prisma.chessGames.create({ data: { userId1, userId2, username1, username2 } });
         } catch (e) {
             throw e;
         }
@@ -59,7 +63,7 @@ export class ChessGamesService {
     }
 
     async getPlayer(userId: string) {
-        await this.prisma.users.findUniqueOrThrow({
+        return await this.prisma.users.findUniqueOrThrow({
             where: {
                 id: userId
             }
@@ -110,6 +114,26 @@ export class ChessGamesService {
                 where: { id },
                 data: {
                     matchRequestMade: true,
+                }
+            });
+        } catch (e) {
+            throw e;
+        }
+    }
+
+    async saveChat(id: string, {chat}: ChatChessGameDto, authorization: string) {
+        try {
+            const chessGame = await this.getChessGame(id);
+            const userId = this.getUserDataFromToken(authorization).id;
+
+            if (chessGame.userId1 !== userId && chessGame.userId2 !== userId) {
+                throw new UnauthorizedException()
+            }
+
+            return this.prisma.chessGames.update({
+                where: { id },
+                data: {
+                    chatMessages: chat,
                 }
             });
         } catch (e) {
