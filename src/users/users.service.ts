@@ -24,8 +24,9 @@ export class UsersService {
         }
     }
 
-    findAll() {
-        return this.prisma.users.findMany({ omit: { password: true }, orderBy: { wins: 'desc' } });
+    async findAll() {
+        const users = await this.prisma.users.findMany({ omit: { password: true }, orderBy: { wins: 'desc' } });
+        return users.map((user, index) => ({ position: index + 1, ...user }));
     }
 
     async findOne(id: string) {

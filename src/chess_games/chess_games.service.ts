@@ -8,7 +8,7 @@ import { ChatChessGameDto } from './dto/chat-chess-game.dto';
 export class ChessGamesService {
     constructor (private prisma: PrismaService) {}
 
-    async createChessGame({ userId }: CreateChessGameDto, authorization: string) {        
+    async createChessGame({ userId }: CreateChessGameDto, authorization: string) {
         try {
             const userId1 = this.getUserDataFromToken(authorization).id;
             const userId2 = userId;
@@ -27,22 +27,17 @@ export class ChessGamesService {
             if (search2) {
                 return search2;
             }
+            const chessGame = this.prisma.chessGames.create({ data: { userId1, userId2, username1, username2 } });
 
-            return this.prisma.chessGames.create({ data: { userId1, userId2, username1, username2 } });
+            return { ...chessGame, user1, user2 };
         } catch (e) {
             throw e;
         }
     }
 
-    async setChessPlayerColor(chessGameId: string, authorization: string) {
+    async startChessGame(chessGameId: string, authorization: string) {
         try {
-            const chessGame = await this.getChessGame(chessGameId);
-
-            const userId = this.getUserDataFromToken(authorization).id;
-
-            if (chessGame.userId1 !== userId && chessGame.userId2 !== userId) {
-                throw new UnauthorizedException()
-            }
+            const { chessGame } = await this.verifyUser(chessGameId, authorization);
 
             const zeroOrOne = Math.round(Math.random());
 
@@ -54,6 +49,8 @@ export class ChessGamesService {
                     blackPieceUser: zeroOrOne === 0 ? chessGame.userId1 : chessGame.userId2,
                     whitePieceUser: zeroOrOne === 0 ? chessGame.userId2 : chessGame.userId1,
                     matchRequestMade: false,
+                    userIdOfRequest: null,
+                    gameStarted: true,
                 },
             });
 
@@ -63,20 +60,20 @@ export class ChessGamesService {
     }
 
     async getPlayer(userId: string) {
-        return await this.prisma.users.findUniqueOrThrow({
-            where: {
-                id: userId
-            }
-        }).catch(() => {
-            throw new NotFoundException('User Not Found')
-        });
+        return await this.prisma.users.findUniqueOrThrow({ where: { id: userId } })
+            .catch(() => { throw new NotFoundException('User Not Found') });
     }
 
     async getChessGame(id: string) {
-        return await this.prisma.chessGames.findUniqueOrThrow({ where: { id }})
+        const chessGame = await this.prisma.chessGames.findUniqueOrThrow({ where: { id }})
             .catch(() => {
                 throw new NotFoundException('Chess Game Not Found')
             });
+        
+        const user1 = await this.getPlayer(chessGame.userId1);
+        const user2 = await this.getPlayer(chessGame.userId2);
+        
+        return { ...chessGame, user1, user2 }
     }
 
     async searchForGame(userId1: string, userId2: string) {
@@ -103,17 +100,13 @@ export class ChessGamesService {
 
     async makeMatchRequest(id: string, authorization: string) {
         try {
-            const chessGame = await this.getChessGame(id);
-            const userId = this.getUserDataFromToken(authorization).id;
-
-            if (chessGame.userId1 !== userId && chessGame.userId2 !== userId) {
-                throw new UnauthorizedException()
-            }
+            const { userId } = await this.verifyUser(id, authorization);
 
             return this.prisma.chessGames.update({
                 where: { id },
                 data: {
                     matchRequestMade: true,
+                    userIdOfRequest: userId,
                 }
             });
         } catch (e) {
@@ -121,21 +114,49 @@ export class ChessGamesService {
         }
     }
 
-    async saveChat(id: string, {chat}: ChatChessGameDto, authorization: string) {
+    async saveChat(chessGameId: string, {chat}: ChatChessGameDto, authorization: string) {
         try {
-            const chessGame = await this.getChessGame(id);
-            const userId = this.getUserDataFromToken(authorization).id;
-
-            if (chessGame.userId1 !== userId && chessGame.userId2 !== userId) {
-                throw new UnauthorizedException()
-            }
+            await this.verifyUser(chessGameId, authorization);
 
             return this.prisma.chessGames.update({
-                where: { id },
+                where: { id: chessGameId },
                 data: {
                     chatMessages: chat,
                 }
             });
+        } catch (e) {
+            throw e;
+        }
+    }
+
+    async finishGame (chessGameId: string, authorization: string) {
+        try {
+            await this.verifyUser(chessGameId, authorization);
+
+            return this.prisma.chessGames.update({
+                where: { id: chessGameId },
+                data: {
+                    matchRequestMade: false,
+                    userIdOfRequest: null,
+                    gameStarted: false,
+                }
+            });
+
+        } catch (e) {
+            throw e;
+        }
+    }
+
+    async verifyUser (chessGameId: string, authorization: string) {
+        try {
+            const chessGame = await this.getChessGame(chessGameId);
+            const userId = this.getUserDataFromToken(authorization).id;
+    
+            if (chessGame.userId1 !== userId && chessGame.userId2 !== userId) {
+                throw new UnauthorizedException()
+            }
+
+            return { chessGame, userId };
         } catch (e) {
             throw e;
         }

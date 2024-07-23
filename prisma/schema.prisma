@@ -38,6 +38,8 @@ model ChessGames {
   whitePieceUser     String?
   chatMessages       String?  @default("[]")
   matchRequestMade   Boolean? @default(false)
+  userIdOfRequest    String?
+  gameStarted        Boolean? @default(false)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }

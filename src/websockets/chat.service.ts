@@ -6,6 +6,7 @@ export class ChatService {
     private readonly connectedClients: Map<string, Socket> = new Map();
 
     handleConnection(socket: Socket): void {
+        console.log('ChatService handleConnection');
         const clientId = socket.id;
         this.connectedClients.set(clientId, socket);
 

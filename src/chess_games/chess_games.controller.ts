@@ -10,9 +10,9 @@ import { ChatChessGameDto } from './dto/chat-chess-game.dto';
 export class ChessGamesController {
     constructor(private readonly chessGamesService: ChessGamesService) {}
 
-    @Get(':id')
+    @Get(':chessGameId')
     @UseGuards(ChessGamesAuthGuard)
-    getChessGame(@Param('id') chessGameId: string) {
+    getChessGame(@Param('chessGameId') chessGameId: string) {
         return this.chessGamesService.getChessGame(chessGameId);
     }
 
@@ -22,21 +22,27 @@ export class ChessGamesController {
         return this.chessGamesService.createChessGame(createChessGameDto, headers['authorization']);
     }
 
-    @Patch('start-game/:id')
+    @Patch('start-game/:chessGameId')
     @UseGuards(ChessGamesAuthGuard)
-    startGame(@Param('id') chessGameId: string, @Headers() headers: Record<string, string>) {
-        return this.chessGamesService.setChessPlayerColor(chessGameId, headers['authorization']);
+    startGame(@Param('chessGameId') chessGameId: string, @Headers() headers: Record<string, string>) {
+        return this.chessGamesService.startChessGame(chessGameId, headers['authorization']);
     }
 
     @UseGuards(ChessGamesAuthGuard)
-    @Patch('make-match-request/:id')
-    makeMatchRequest(@Param('id') chessGameId: string, @Headers() headers: Record<string, string>) {
+    @Patch('make-match-request/:chessGameId')
+    makeMatchRequest(@Param('chessGameId') chessGameId: string, @Headers() headers: Record<string, string>) {
         return this.chessGamesService.makeMatchRequest(chessGameId, headers['authorization']);
     }
 
-    @Patch('save-chat/:id')
     @UseGuards(ChessGamesAuthGuard)
-    saveChat(@Param('id') chessGameId: string, @Body() chatChessGameDto: ChatChessGameDto, @Headers() headers: Record<string, string>) {
+    @Patch('finish-game/:chessGameId')
+    finishGame (@Param('chessGameId') chessGameId: string, @Headers() headers: Record<string, string>) {
+        return this.chessGamesService.finishGame(chessGameId, headers['authorization']);
+    }
+
+    @Patch('save-chat/:chessGameId')
+    @UseGuards(ChessGamesAuthGuard)
+    saveChat(@Param('chessGameId') chessGameId: string, @Body() chatChessGameDto: ChatChessGameDto, @Headers() headers: Record<string, string>) {
         return this.chessGamesService.saveChat(chessGameId, chatChessGameDto, headers['authorization']);
     }
 
