@@ -16,16 +16,17 @@ datasource db {
 
 
 model Users {
-  id         String   @id @map("_id") @default(auto()) @db.ObjectId()
-  username   String   @unique
-  password   String
-  active     Boolean  @default(true)
-  wins       Int      @default(0)
-  loses      Int      @default(0)
-  draws      Int      @default(0)
-  profilePic String   @default("https://i.imgur.com/AEf6xMQ.jpeg")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id             String         @id @map("_id") @default(auto()) @db.ObjectId()
+  username       String         @unique
+  password       String
+  active         Boolean        @default(true)
+  wins           Int            @default(0)
+  loses          Int            @default(0)
+  draws          Int            @default(0)
+  profilePic     String         @default("https://i.imgur.com/AEf6xMQ.jpeg")
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  notifications  Notifications[]
 }
 
 model ChessGames {
@@ -42,4 +43,15 @@ model ChessGames {
   gameStarted        Boolean? @default(false)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+}
+
+model Notifications {
+  id              String    @id @map("_id")  @default(auto()) @db.ObjectId()
+  message         String
+  username        String?
+  roomId          String
+  createdAt       DateTime  @default(now())
+  user            Users     @relation(fields: [targetUserId], references: [id])
+  targetUserId    String    @db.ObjectId
+  readMessageAt   DateTime?
 }

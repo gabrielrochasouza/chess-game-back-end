@@ -12,6 +12,7 @@ import {
 import { Server, Socket } from "socket.io";
 import { ChatService } from "./chat.service";
 import { PrismaService } from 'src/prisma/prisma.service';
+import { NotificationsService } from "src/notifications/notifications.service";
 
 interface IPayload {
   selectedLine: number;
@@ -31,7 +32,11 @@ interface IChatMessage {
 @WebSocketGateway({ cors: true })
 export class ChatGateway
 implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
-    constructor(private readonly chatService: ChatService, private prisma: PrismaService) {}
+    constructor(
+        private readonly chatService: ChatService,
+        private prisma: PrismaService,
+        private notificationsService: NotificationsService
+    ) {}
 
     private connectedUsers = {};
     private chatMessages = {};
@@ -94,7 +99,7 @@ implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
     }
 
     @SubscribeMessage("sendChatMessage")
-    handleSendChatMessage(client: Socket, payload: { roomId: string, messages: IChatMessage[], username: string, allMessages: string, targetUserId: string }): void {
+    async handleSendChatMessage(client: Socket, payload: { roomId: string, messages: IChatMessage[], username: string, allMessages: string, targetUserId: string }) {
         this.chatMessages[payload.roomId] = payload.messages;
 
         this.server.to(payload.roomId).emit('chatMessage', { 
@@ -102,17 +107,18 @@ implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
             chatMessages: this.chatMessages,
             username: payload.username,
         });
-        this.server.emit('sendNotification', {
+
+        await this.notificationsService.createNotification({
             targetUserId: payload.targetUserId,
             message: `New Message from ${payload.username}. "${payload.messages.slice(-1)[0].message}"`,
-            createdAt: new Date(),
             roomId: payload.roomId,
             username: payload.username,
         });
+        this.server.emit('sendNotification', { targetUserId: payload.targetUserId });
     }
 
     @SubscribeMessage("reloadInfo")
-    handleReloadInfo(client: Socket, payload: { userId: string, username: string, status: number, roomId: string }) {
+    async handleReloadInfo(client: Socket, payload: { userId: string, username: string, status: number, roomId: string }) {
         const STATUS_NO_MATCH_REQUEST = 0;
         const STATUS_MATCH_REQUEST_MADE_BY_ME = 1;
         const STATUS_GAME_STARTED = 3;
@@ -134,13 +140,16 @@ implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
 
         this.server.emit('reloadInfo', payload);
         this.server.emit('reloadGlobal', payload);
-        this.server.emit('sendNotification', {
-            targetUserId: payload.userId,
-            message,
-            createdAt: new Date(),
-            roomId: payload.roomId,
-            username: payload.username,
-        });
+        
+        if (payload.username) {
+            await this.notificationsService.createNotification({
+                targetUserId: payload.userId,
+                message,
+                roomId: payload.roomId,
+                username: payload.username,
+            });
+            this.server.emit('sendNotification', { targetUserId: payload.userId });
+        }
     }
 
     @SubscribeMessage('joinRoom')

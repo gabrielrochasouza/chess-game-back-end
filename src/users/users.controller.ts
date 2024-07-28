@@ -5,11 +5,15 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import UserLoginDto from './dto/user-login-dto';
 import { UsersAuthGuard } from 'src/auth_guard/users-auth.guard';
 import { ApiTags } from '@nestjs/swagger';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 @ApiTags('Users')
 @Controller('users')
 export class UsersController {
-    constructor(private readonly usersService: UsersService) {}
+    constructor(
+        private readonly usersService: UsersService,
+        private readonly notificationsService: NotificationsService
+    ) {}
 
     @Post('register')
     create(@Body() createUserDto: CreateUserDto) {
@@ -31,9 +35,9 @@ export class UsersController {
         return this.usersService.findAll();
     }
 
-    @Get(':id')
-    findOne(@Param('id') id: string) {
-        return this.usersService.findOne(id);
+    @Get(':userId')
+    findOne(@Param('userId') userId: string) {
+        return this.usersService.findOne(userId);
     }
 
     @Get(':username/username')
@@ -42,32 +46,38 @@ export class UsersController {
     }
 
     @UseGuards(UsersAuthGuard)
-    @Patch(':id')
-    update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-        return this.usersService.update(id, updateUserDto);
+    @Patch(':userId')
+    update(@Param('userId') userId: string, @Body() updateUserDto: UpdateUserDto) {
+        return this.usersService.update(userId, updateUserDto);
     }
 
     @UseGuards(UsersAuthGuard)
-    @Patch(':id/win')
-    addWinToPlayerRecord(@Param('id') id: string) {
-        return this.usersService.updateRecord(id, 'wins');
+    @Patch(':userId/win')
+    addWinToPlayerRecord(@Param('userId') userId: string) {
+        return this.usersService.updateRecord(userId, 'wins');
     }
 
     @UseGuards(UsersAuthGuard)
-    @Patch(':id/lose')
-    addLoseToPlayerRecord(@Param('id') id: string) {
-        return this.usersService.updateRecord(id, 'loses');
+    @Patch(':userId/lose')
+    addLoseToPlayerRecord(@Param('userId') userId: string) {
+        return this.usersService.updateRecord(userId, 'loses');
     }
 
     @UseGuards(UsersAuthGuard)
-    @Patch(':id/draw')
-    addDrawToPlayerRecord(@Param('id') id: string) {
-        return this.usersService.updateRecord(id, 'draws');
+    @Patch(':userId/draw')
+    addDrawToPlayerRecord(@Param('userId') userId: string) {
+        return this.usersService.updateRecord(userId, 'draws');
     }
 
     @UseGuards(UsersAuthGuard)
-    @Delete(':id')
-    remove(@Param('id') id: string) {
-        return this.usersService.remove(id);
+    @Delete(':userId')
+    remove(@Param('userId') userId: string) {
+        return this.usersService.remove(userId);
+    }
+
+    @UseGuards(UsersAuthGuard)
+    @Get(':userId/read-all-notifications')
+    readAllNotifications(@Param('userId') userId: string) {
+        return this.notificationsService.readAllNotifications(userId);
     }
 }

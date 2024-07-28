@@ -32,7 +32,10 @@ export class UsersService {
     async findOne(id: string) {
         const user = await this.prisma.users.findUniqueOrThrow({ 
             where: { id },
-            omit: { password: true }
+            omit: { password: true },
+            include: {
+                notifications: true,
+            }
         }).catch(() => {
             throw new NotFoundException();
         });
