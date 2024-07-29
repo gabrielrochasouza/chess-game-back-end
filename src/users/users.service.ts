@@ -105,13 +105,15 @@ export class UsersService {
         
         const token = jwt.sign({ username: user.username, id: user.id }, env['SECRET_KEY'], { expiresIn: `${expireTimeHours}h` });
         
+        delete user.password;
+
         return { token, expiresIn: new Date(Date.now() + expireTimeHours * 60 * 60 * 1000) , ...user };
     }
 
     async getPersonalInfo (authorization: string) {
         try {
             const token = authorization.split(' ')[1];
-            if(jwt.verify(token, env['SECRET_KEY'])) {
+            if(token && jwt.verify(token, env['SECRET_KEY'])) {
                 const data = jwt.decode(token);
                 return {
                     user: await this.findOne(data['id']),

@@ -4,7 +4,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import UserLoginDto from './dto/user-login-dto';
 import { UsersAuthGuard } from 'src/auth_guard/users-auth.guard';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { NotificationsService } from 'src/notifications/notifications.service';
 
 @ApiTags('Users')
@@ -16,11 +16,45 @@ export class UsersController {
     ) {}
 
     @Post('register')
+    @ApiResponse({
+        status: '2XX',
+        schema: { 
+            example: { 
+                id: 'uuid',
+                username: 'username',
+                active: false,
+                wins: 0,
+                loses: 0,
+                draws: 0,
+                profilePic: 'url',
+                createdAt: '2024-07-23T04:56:32.775Z',
+                updatedAt: '2024-07-23T04:56:32.775Z', 
+            }
+        },
+    })
     create(@Body() createUserDto: CreateUserDto) {
         return this.usersService.create(createUserDto);
     }
 
     @Post('login')
+    @ApiResponse({
+        status: '2XX',
+        schema: { 
+            example: { 
+                id: 'uuid',
+                username: 'username',
+                active: false,
+                wins: 0,
+                loses: 0,
+                draws: 0,
+                profilePic: 'url',
+                createdAt: '2024-07-23T04:56:32.775Z',
+                updatedAt: '2024-07-23T04:56:32.775Z',
+                expiresIn: '2024-07-23T04:56:32.775Z',
+                token: 'token'
+            }
+        },
+    })
     login(@Body() userLoginDto: UserLoginDto) {
         return this.usersService.login(userLoginDto);
     }
