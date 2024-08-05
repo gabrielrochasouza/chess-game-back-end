@@ -98,6 +98,7 @@ implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
     @SubscribeMessage("movePiece")
     handleMovePiece(client: Socket, payload: IPayload): void {
         this.server.emit('movePiece', payload);
+        this.server.emit('movePieceGlobal', payload);
     }
 
     @SubscribeMessage("sendChatMessage")
