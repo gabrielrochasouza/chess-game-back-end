@@ -10,6 +10,7 @@ import { HealthcheckModule } from './healthcheck/healthcheck.module';
 import { ScheduleModule } from "@nestjs/schedule";
 import { HttpModule } from "@nestjs/axios";
 import { HealthcheckService } from "./healthcheck/healthcheck.service";
+import { UsersService } from "./users/users.service";
 
 @Module({
     imports: [
@@ -27,6 +28,7 @@ import { HealthcheckService } from "./healthcheck/healthcheck.service";
         PrismaService,
         NotificationsService,
         HealthcheckService,
+        UsersService,
     ],
 })
 

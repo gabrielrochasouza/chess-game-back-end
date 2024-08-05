@@ -13,6 +13,7 @@ import { Server, Socket } from "socket.io";
 import { ChatService } from "./chat.service";
 import { PrismaService } from 'src/prisma/prisma.service';
 import { NotificationsService } from "src/notifications/notifications.service";
+import { UsersService } from "src/users/users.service";
 
 interface IPayload {
   selectedLine: number;
@@ -35,7 +36,8 @@ implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
     constructor(
         private readonly chatService: ChatService,
         private prisma: PrismaService,
-        private notificationsService: NotificationsService
+        private notificationsService: NotificationsService,
+        private userService: UsersService,
     ) {}
 
     private connectedUsers = {};
@@ -156,6 +158,21 @@ implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
     handleJoinRoom(@MessageBody() room: string, @ConnectedSocket() client: Socket): void {
         client.join(room);
         client.emit('joinedRoom', room);
+    }
+
+    @SubscribeMessage('new-user-registered')
+    handleNewUser() {
+        this.server.emit('new-user-registered');
+    }
+
+    @SubscribeMessage('update-room')
+    handleUpdateRoom(client: Socket, payload: { roomId: string, result: number }) {
+        this.server.emit('update-room', payload);
+    }
+
+    @SubscribeMessage('player-gave-up')
+    handlePlayerGaveUp(client: Socket, payload: { userId: string }) {
+        this.userService.updateRecord(payload.userId, 'wins');
     }
 
 }
