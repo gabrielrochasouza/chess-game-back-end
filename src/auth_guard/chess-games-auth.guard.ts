@@ -20,7 +20,11 @@ export class ChessGamesAuthGuard implements CanActivate {
             }
             const token = request.headers['authorization'].split(' ')[1];
 
-            if(jwt.verify(token, env['SECRET_KEY'])) {
+            if (!token) {
+                return false;
+            }
+
+            if(token && jwt.verify(token, env['SECRET_KEY'])) {
                 return true;
             }
         } catch (e) {

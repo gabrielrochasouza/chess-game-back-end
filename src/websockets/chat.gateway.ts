@@ -176,4 +176,9 @@ implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
         this.userService.updateRecord(payload.userId, 'wins');
     }
 
+    @SubscribeMessage('reload-instances')
+    handleReloadInstances(client: Socket, payload) {
+        this.server.emit('reload-instances', payload);
+    }
+
 }

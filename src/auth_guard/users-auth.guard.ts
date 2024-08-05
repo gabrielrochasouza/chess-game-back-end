@@ -19,7 +19,12 @@ export class UsersAuthGuard implements CanActivate {
                 return false;
             }
             const token = request.headers['authorization'].split(' ')[1];
-            if(jwt.verify(token, env['SECRET_KEY'])) {
+            
+            if (!token) {
+                return false;
+            }
+            
+            if(token && jwt.verify(token, env['SECRET_KEY'])) {
                 const data = jwt.decode(token);
                 return data['id'] === request.params.userId;
             }
