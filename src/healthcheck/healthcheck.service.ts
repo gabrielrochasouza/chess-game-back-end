@@ -10,7 +10,7 @@ export class HealthcheckService {
 
     constructor(private readonly httpService: HttpService) {}
 
-    @Cron(CronExpression.EVERY_5_MINUTES)
+    @Cron(CronExpression.EVERY_10_MINUTES)
     async handleCron() {
         this.logger.debug('Running healthcheck...');
 
